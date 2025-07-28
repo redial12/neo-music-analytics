@@ -22,7 +22,7 @@ interface Track {
 
 const SAMPLE_TRACKS: Track[] = [
   {
-    id: 'bohemian-rhapsody',
+    id: 'track-001',
     title: 'Bohemian Rhapsody',
     artist: 'Queen',
     album: 'A Night at the Opera',
@@ -30,7 +30,7 @@ const SAMPLE_TRACKS: Track[] = [
     albumArt: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop&crop=center'
   },
   {
-    id: 'hotel-california',
+    id: 'track-002',
     title: 'Hotel California',
     artist: 'Eagles',
     album: 'Hotel California',
@@ -38,7 +38,7 @@ const SAMPLE_TRACKS: Track[] = [
     albumArt: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=200&h=200&fit=crop&crop=center'
   },
   {
-    id: 'stairway-to-heaven',
+    id: 'track-003',
     title: 'Stairway to Heaven',
     artist: 'Led Zeppelin',
     album: 'Led Zeppelin IV',
@@ -52,8 +52,11 @@ const MusicPlayer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(0.7);
+  const [lastVolume, setLastVolume] = useState(0.7);
   const [isLiked, setIsLiked] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [seekStartTime, setSeekStartTime] = useState(0);
   
   const audioRef = useRef<HTMLAudioElement>(null);
   const currentTrack = SAMPLE_TRACKS[currentTrackIndex];
@@ -88,6 +91,14 @@ const MusicPlayer: React.FC = () => {
 
   // Handle skip
   const handleSkip = (direction: 'next' | 'prev') => {
+    // Log skip event for the current track that was playing
+    logEvent({
+      event_type: 'skip',
+      track_id: currentTrack.id,
+      position: currentTime,
+      timestamp: new Date().toISOString()
+    });
+
     const newIndex = direction === 'next' 
       ? (currentTrackIndex + 1) % SAMPLE_TRACKS.length
       : (currentTrackIndex - 1 + SAMPLE_TRACKS.length) % SAMPLE_TRACKS.length;
@@ -97,26 +108,23 @@ const MusicPlayer: React.FC = () => {
     setIsPlaying(false);
     setIsLiked(false); // Reset like button
     setIsInPlaylist(false); // Reset playlist button
-    
-    logEvent({
-      event_type: 'skip',
-      track_id: SAMPLE_TRACKS[newIndex].id,
-      from_track_id: currentTrack.id,
-      position: 0
-    });
 
-    // Auto-play next track after a short delay
-    if (direction === 'next') {
-      setTimeout(() => {
-        setIsPlaying(true);
-        logEvent({
-          event_type: 'play',
-          track_id: SAMPLE_TRACKS[newIndex].id,
-          position: 0,
-          duration: SAMPLE_TRACKS[newIndex].duration
-        });
-      }, 500);
-    }
+    // Auto-play track after a short delay (for both directions)
+    setTimeout(() => {
+      setIsPlaying(true);
+      logEvent({
+        event_type: 'play',
+        track_id: SAMPLE_TRACKS[newIndex].id,
+        position: 0,
+        duration: SAMPLE_TRACKS[newIndex].duration
+      });
+    }, 500);
+  };
+
+  // Handle seek start
+  const handleSeekStart = () => {
+    setIsSeeking(true);
+    setSeekStartTime(currentTime);
   };
 
   // Handle seek
@@ -127,16 +135,20 @@ const MusicPlayer: React.FC = () => {
 
   // Handle seek end (when user releases the slider)
   const handleSeekEnd = () => {
-    const newTime = currentTime;
-    const oldTime = currentTime;
-    
-    logEvent({
-      event_type: 'scrub',
-      track_id: currentTrack.id,
-      from_timestamp: oldTime,
-      to_timestamp: newTime,
-      duration: currentTrack.duration
-    });
+    if (isSeeking) {
+      const newTime = currentTime;
+      const oldTime = seekStartTime;
+      
+      logEvent({
+        event_type: 'scrub',
+        track_id: currentTrack.id,
+        from_timestamp: oldTime,
+        to_timestamp: newTime,
+        duration: currentTrack.duration
+      });
+      
+      setIsSeeking(false);
+    }
   };
 
   // Handle volume change
@@ -156,6 +168,32 @@ const MusicPlayer: React.FC = () => {
       volume: newVolume,
       position: currentTime
     });
+  };
+
+  // Handle mute/unmute
+  const handleMuteToggle = () => {
+    if (isMuted) {
+      // Unmute: restore last volume
+      setIsMuted(false);
+      setVolume(lastVolume);
+      logEvent({
+        event_type: 'volume_change',
+        track_id: currentTrack.id,
+        volume: lastVolume,
+        position: currentTime
+      });
+    } else {
+      // Mute: save current volume and set to 0
+      setLastVolume(volume);
+      setIsMuted(true);
+      setVolume(0);
+      logEvent({
+        event_type: 'volume_change',
+        track_id: currentTrack.id,
+        volume: 0,
+        position: currentTime
+      });
+    }
   };
 
   // Handle like
@@ -184,14 +222,42 @@ const MusicPlayer: React.FC = () => {
     });
   };
 
-  // Update current time
+  // Update current time and handle track end
   useEffect(() => {
     const interval = setInterval(() => {
       if (isPlaying && audioRef.current) {
         setCurrentTime(prev => {
           const newTime = prev + 1;
           if (newTime >= currentTrack.duration) {
+            // Track ended, auto-play next track
             setIsPlaying(false);
+            setCurrentTime(0);
+            
+            // Log end of current track
+            logEvent({
+              event_type: 'pause',
+              track_id: currentTrack.id,
+              position: currentTrack.duration,
+              duration: currentTrack.duration
+            });
+            
+            // Auto-play next track
+            const nextIndex = (currentTrackIndex + 1) % SAMPLE_TRACKS.length;
+            setCurrentTrackIndex(nextIndex);
+            setIsLiked(false);
+            setIsInPlaylist(false);
+            
+            // Start playing next track after a short delay
+            setTimeout(() => {
+              setIsPlaying(true);
+              logEvent({
+                event_type: 'play',
+                track_id: SAMPLE_TRACKS[nextIndex].id,
+                position: 0,
+                duration: SAMPLE_TRACKS[nextIndex].duration
+              });
+            }, 1000);
+            
             return 0;
           }
           return newTime;
@@ -200,7 +266,7 @@ const MusicPlayer: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isPlaying, currentTrack.duration]);
+  }, [isPlaying, currentTrack.duration, currentTrackIndex, currentTrack.id]);
 
   return (
     <div className="h-full bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-6 flex flex-col">
@@ -249,7 +315,9 @@ const MusicPlayer: React.FC = () => {
           max={currentTrack.duration}
           value={currentTime}
           onChange={handleSeek}
+          onMouseDown={handleSeekStart}
           onMouseUp={handleSeekEnd}
+          onKeyDown={handleSeekStart}
           onKeyUp={handleSeekEnd}
           className="w-full h-2 bg-purple-700 rounded-lg appearance-none cursor-pointer slider"
         />
@@ -307,10 +375,7 @@ const MusicPlayer: React.FC = () => {
       {/* Volume Control */}
       <div className="flex items-center justify-center space-x-4">
         <button
-          onClick={() => {
-            setIsMuted(!isMuted);
-            setVolume(isMuted ? 0.7 : 0);
-          }}
+          onClick={handleMuteToggle}
           className="text-white hover:text-purple-300 transition-colors"
         >
           {isMuted || volume === 0 ? <VolumeX size={20} /> : <Volume2 size={20} />}

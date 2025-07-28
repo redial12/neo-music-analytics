@@ -1,5 +1,6 @@
 import { } from 'react';
 import { AnalyticsEvent } from '../utils/socket';
+import { EVENT_COLORS } from '../utils/colors';
 import { Clock, User, Music, Activity } from 'lucide-react';
 
 interface EventFeedProps {
@@ -33,28 +34,7 @@ const EventFeed: React.FC<EventFeedProps> = ({ events }) => {
   };
 
   const getEventColor = (eventType: string) => {
-    switch (eventType) {
-      case 'play':
-        return 'text-green-600';
-      case 'pause':
-        return 'text-yellow-600';
-      case 'skip':
-        return 'text-blue-600';
-      case 'scrub':
-        return 'text-purple-600';
-      case 'like':
-        return 'text-red-600';
-      case 'unlike':
-        return 'text-gray-600';
-      case 'add_to_playlist':
-        return 'text-indigo-600';
-      case 'remove_from_playlist':
-        return 'text-orange-600';
-      case 'volume_change':
-        return 'text-orange-600';
-      default:
-        return 'text-gray-600';
-    }
+    return EVENT_COLORS[eventType] || '#8884d8';
   };
 
   const formatTimestamp = (timestamp: string) => {
@@ -89,11 +69,11 @@ const EventFeed: React.FC<EventFeedProps> = ({ events }) => {
                   <span className="text-lg">{getEventIcon(event.event_type)}</span>
                   <div>
                     <div className="flex items-center space-x-2">
-                      <span className={`font-medium ${getEventColor(event.event_type)}`}>
+                      <span 
+                        className="font-medium"
+                        style={{ color: getEventColor(event.event_type) }}
+                      >
                         {event.event_type}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatTimestamp(event.timestamp)}
                       </span>
                     </div>
                     <div className="text-sm text-muted-foreground mt-1">

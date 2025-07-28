@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { onNewEvent, AnalyticsEvent } from '../utils/socket';
+import { TRACK_TITLES } from '../utils/colors';
 import EventFeed from './EventFeed';
 import AnalyticsCharts from './AnalyticsCharts';
 
@@ -39,7 +40,15 @@ const Dashboard: React.FC = () => {
   }, [events, filters]);
 
   const uniqueEventTypes = [...new Set(events.map(e => e.event_type))];
-  const uniqueTrackIds = [...new Set(events.map(e => e.track_id))];
+  
+  // Sort tracks by title name while keeping track-001 format
+  const uniqueTrackIds = [...new Set(events.map(e => e.track_id))]
+    .sort((a, b) => {
+      const titleA = TRACK_TITLES[a] || a;
+      const titleB = TRACK_TITLES[b] || b;
+      return titleA.localeCompare(titleB);
+    });
+    
   const uniqueUserIds = [...new Set(events.map(e => e.user_id))];
 
   return (
@@ -70,7 +79,7 @@ const Dashboard: React.FC = () => {
         
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">
-            Track ID
+            Track
           </label>
           <select
             value={filters.trackId}
@@ -79,7 +88,9 @@ const Dashboard: React.FC = () => {
           >
             <option value="">All Tracks</option>
             {uniqueTrackIds.map(id => (
-              <option key={id} value={id}>{id}</option>
+              <option key={id} value={id}>
+                {id} - {TRACK_TITLES[id] || 'Unknown Track'}
+              </option>
             ))}
           </select>
         </div>

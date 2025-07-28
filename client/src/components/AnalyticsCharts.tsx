@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { AnalyticsEvent } from '../utils/socket';
+import { TRACK_TITLES, EVENT_COLORS } from '../utils/colors';
 import { 
   BarChart, 
   Bar, 
@@ -17,18 +18,6 @@ interface AnalyticsChartsProps {
   events: AnalyticsEvent[];
 }
 
-// Generate consistent colors for event types
-const generateEventColors = (eventTypes: string[]) => {
-  const baseColors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#ff0000', '#00ff00', '#0000ff', '#ffff00'];
-  const colorMap: Record<string, string> = {};
-  
-  eventTypes.forEach((type, index) => {
-    colorMap[type] = baseColors[index % baseColors.length];
-  });
-  
-  return colorMap;
-};
-
 const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ events }) => {
   // Event type distribution
   const eventTypeData = useMemo(() => {
@@ -43,26 +32,62 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ events }) => {
     }));
   }, [events]);
 
-  // Generate consistent colors
+  // Generate consistent colors for event types using fixed mapping
   const eventColors = useMemo(() => {
     const eventTypes = [...new Set(events.map(e => e.event_type))];
-    return generateEventColors(eventTypes);
+    const colorMap: Record<string, string> = {};
+    
+    eventTypes.forEach((type) => {
+      colorMap[type] = EVENT_COLORS[type] || '#8884d8';
+    });
+    
+    return colorMap;
   }, [events]);
 
-  // Track popularity
+  // Track popularity - one bar per event type per track
   const trackData = useMemo(() => {
-    const trackCounts = events.reduce((acc, event) => {
-      acc[event.track_id] = (acc[event.track_id] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const trackEventCounts: Record<string, Record<string, number>> = {};
+    
+    // Count events by track and event type
+    events.forEach(event => {
+      if (!trackEventCounts[event.track_id]) {
+        trackEventCounts[event.track_id] = {};
+      }
+      trackEventCounts[event.track_id][event.event_type] = 
+        (trackEventCounts[event.track_id][event.event_type] || 0) + 1;
+    });
 
-    return Object.entries(trackCounts)
-      .map(([track, count]) => ({
-        track,
-        events: count,
-      }))
-      .sort((a, b) => b.events - a.events)
-      .slice(0, 5);
+    // Convert to chart data format - one bar per event type per track
+    const chartData: Array<{
+      track: string;
+      trackTitle: string;
+      eventType: string;
+      count: number;
+      color: string;
+      label: string; // For X-axis display
+    }> = [];
+
+    Object.entries(trackEventCounts).forEach(([trackId, eventCounts]) => {
+      Object.entries(eventCounts).forEach(([eventType, count]) => {
+        chartData.push({
+          track: trackId,
+          trackTitle: TRACK_TITLES[trackId] || trackId,
+          eventType,
+          count,
+          color: EVENT_COLORS[eventType] || '#8884d8',
+          label: `${TRACK_TITLES[trackId] || trackId} - ${eventType}`
+        });
+      });
+    });
+
+    // Sort by track title, then by event type
+    return chartData
+      .sort((a, b) => {
+        const titleCompare = a.trackTitle.localeCompare(b.trackTitle);
+        if (titleCompare !== 0) return titleCompare;
+        return a.eventType.localeCompare(b.eventType);
+      })
+      .slice(0, 20); // Limit to prevent overcrowding
   }, [events]);
 
   // Time-based event frequency (last 10 minutes)
@@ -133,14 +158,26 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ events }) => {
 
       {/* Track Popularity */}
       <div>
-        <h4 className="text-sm font-medium text-foreground mb-2">Track Popularity</h4>
+        <h4 className="text-sm font-medium text-foreground mb-2">Track Popularity by Event Type</h4>
         <ResponsiveContainer width="100%" height={120}>
           <BarChart data={trackData}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="track" />
+            <XAxis dataKey="label" angle={-45} textAnchor="end" height={60} />
             <YAxis />
-            <Tooltip />
-            <Bar dataKey="events" fill="#8884d8" />
+            <Tooltip 
+              formatter={(value, _name, props) => [
+                `${value} ${props.payload.eventType} events`,
+                props.payload.trackTitle
+              ]}
+            />
+            {trackData.map((entry, index) => (
+              <Bar 
+                key={`bar-${index}`}
+                dataKey="count" 
+                fill={entry.color}
+                name={entry.eventType}
+              />
+            ))}
           </BarChart>
         </ResponsiveContainer>
       </div>
