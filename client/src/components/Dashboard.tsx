@@ -132,16 +132,38 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Charts and Event Feed */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-96">
-        <div className="bg-card p-4 rounded-lg border overflow-hidden">
-          <h3 className="text-lg font-semibold text-foreground mb-4">📈 Analytics</h3>
-          <AnalyticsCharts events={filteredEvents} />
+      {/* Live Events Banner */}
+      <div className="bg-card p-4 rounded-lg border mb-6">
+        <h3 className="text-lg font-semibold text-foreground mb-4">📋 Live Events</h3>
+        <div className="h-32">
+          <EventFeed events={filteredEvents} />
+        </div>
+      </div>
+
+      {/* Analytics Charts - Separate Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Event Type Distribution */}
+        <div className="bg-card p-4 rounded-lg border">
+          <h3 className="text-lg font-semibold text-foreground mb-4">📊 Event Type Distribution</h3>
+          <div className="h-64">
+            <AnalyticsCharts events={filteredEvents} chartType="pie" />
+          </div>
         </div>
         
-        <div className="bg-card p-4 rounded-lg border overflow-hidden">
-          <h3 className="text-lg font-semibold text-foreground mb-4">📋 Live Events</h3>
-          <EventFeed events={filteredEvents} />
+        {/* Track Total Events */}
+        <div className="bg-card p-4 rounded-lg border">
+          <h3 className="text-lg font-semibold text-foreground mb-4">📈 Total Track Events</h3>
+          <div className="h-64">
+            <AnalyticsCharts events={filteredEvents} chartType="bar" />
+          </div>
+        </div>
+        
+        {/* Timeline Chart */}
+        <div className="bg-card p-4 rounded-lg border">
+          <h3 className="text-lg font-semibold text-foreground mb-4">⏰ Event Timeline</h3>
+          <div className="h-64">
+            <AnalyticsCharts events={filteredEvents} chartType="line" />
+          </div>
         </div>
       </div>
     </div>

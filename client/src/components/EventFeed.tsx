@@ -1,7 +1,7 @@
 import { } from 'react';
 import { AnalyticsEvent } from '../utils/socket';
 import { EVENT_COLORS } from '../utils/colors';
-import { Clock, User, Music, Activity } from 'lucide-react';
+import { User, Music, Activity } from 'lucide-react';
 
 interface EventFeedProps {
   events: AnalyticsEvent[];
@@ -16,6 +16,8 @@ const EventFeed: React.FC<EventFeedProps> = ({ events }) => {
         return '⏸️';
       case 'skip':
         return '⏭️';
+      case 'replay':
+        return '🔄';
       case 'scrub':
         return '⏩';
       case 'like':
@@ -92,7 +94,6 @@ const EventFeed: React.FC<EventFeedProps> = ({ events }) => {
                 </div>
                 <div className="text-xs text-muted-foreground">
                   <div className="flex items-center space-x-1">
-                    <Clock className="w-3 h-3" />
                     <span>{formatTimestamp(event.timestamp)}</span>
                   </div>
                 </div>

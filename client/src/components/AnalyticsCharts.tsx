@@ -11,15 +11,18 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  LineChart,
+  Line
 } from 'recharts';
 
 interface AnalyticsChartsProps {
   events: AnalyticsEvent[];
+  chartType?: 'pie' | 'bar' | 'line';
 }
 
-const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ events }) => {
-  // Event type distribution
+// Event Type Distribution Pie Chart Component
+const EventTypePieChart: React.FC<{ events: AnalyticsEvent[] }> = ({ events }) => {
   const eventTypeData = useMemo(() => {
     const eventCounts = events.reduce((acc, event) => {
       acc[event.event_type] = (acc[event.event_type] || 0) + 1;
@@ -32,7 +35,6 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ events }) => {
     }));
   }, [events]);
 
-  // Generate consistent colors for event types using fixed mapping
   const eventColors = useMemo(() => {
     const eventTypes = [...new Set(events.map(e => e.event_type))];
     const colorMap: Record<string, string> = {};
@@ -44,54 +46,84 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ events }) => {
     return colorMap;
   }, [events]);
 
-  // Track popularity - one bar per event type per track
+  if (events.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground">
+        <div className="text-center">
+          <p>No data to display</p>
+          <p className="text-sm">Interact with the music player to see analytics</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <PieChart>
+        <Pie
+          data={eventTypeData}
+          cx="50%"
+          cy="50%"
+          innerRadius={30}
+          outerRadius={80}
+          paddingAngle={2}
+          dataKey="value"
+        >
+          {eventTypeData.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={eventColors[entry.name] || '#8884d8'} />
+          ))}
+        </Pie>
+        <Tooltip />
+      </PieChart>
+    </ResponsiveContainer>
+  );
+};
+
+// Track Total Events Bar Chart Component
+const TrackEventsBarChart: React.FC<{ events: AnalyticsEvent[] }> = ({ events }) => {
   const trackData = useMemo(() => {
-    const trackEventCounts: Record<string, Record<string, number>> = {};
-    
-    // Count events by track and event type
-    events.forEach(event => {
-      if (!trackEventCounts[event.track_id]) {
-        trackEventCounts[event.track_id] = {};
-      }
-      trackEventCounts[event.track_id][event.event_type] = 
-        (trackEventCounts[event.track_id][event.event_type] || 0) + 1;
-    });
+    const trackCounts = events.reduce((acc, event) => {
+      acc[event.track_id] = (acc[event.track_id] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
-    // Convert to chart data format - one bar per event type per track
-    const chartData: Array<{
-      track: string;
-      trackTitle: string;
-      eventType: string;
-      count: number;
-      color: string;
-      label: string; // For X-axis display
-    }> = [];
-
-    Object.entries(trackEventCounts).forEach(([trackId, eventCounts]) => {
-      Object.entries(eventCounts).forEach(([eventType, count]) => {
-        chartData.push({
-          track: trackId,
-          trackTitle: TRACK_TITLES[trackId] || trackId,
-          eventType,
-          count,
-          color: EVENT_COLORS[eventType] || '#8884d8',
-          label: `${TRACK_TITLES[trackId] || trackId} - ${eventType}`
-        });
-      });
-    });
-
-    // Sort by track title, then by event type
-    return chartData
-      .sort((a, b) => {
-        const titleCompare = a.trackTitle.localeCompare(b.trackTitle);
-        if (titleCompare !== 0) return titleCompare;
-        return a.eventType.localeCompare(b.eventType);
-      })
-      .slice(0, 20); // Limit to prevent overcrowding
+    return Object.entries(trackCounts)
+      .map(([track, count]) => ({
+        track,
+        trackTitle: TRACK_TITLES[track] || track,
+        events: count,
+      }))
+      .sort((a, b) => a.trackTitle.localeCompare(b.trackTitle))
+      .slice(0, 10);
   }, [events]);
 
-  // Time-based event frequency (last 10 minutes)
-  const timeData = useMemo(() => {
+  if (events.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground">
+        <div className="text-center">
+          <p>No data to display</p>
+          <p className="text-sm">Interact with the music player to see analytics</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={trackData}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="trackTitle" angle={-45} textAnchor="end" height={60} />
+        <YAxis />
+        <Tooltip />
+        <Bar dataKey="events" fill="#8884d8" />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+};
+
+// Event Timeline Line Chart Component
+const EventTimelineChart: React.FC<{ events: AnalyticsEvent[] }> = ({ events }) => {
+  const timelineData = useMemo(() => {
     const now = Date.now();
     const tenMinutesAgo = now - 10 * 60 * 1000;
     
@@ -132,71 +164,29 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ events }) => {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Event Type Distribution */}
-      <div>
-        <h4 className="text-sm font-medium text-foreground mb-2">Event Type Distribution</h4>
-        <ResponsiveContainer width="100%" height={120}>
-          <PieChart>
-            <Pie
-              data={eventTypeData}
-              cx="50%"
-              cy="50%"
-              innerRadius={30}
-              outerRadius={50}
-              paddingAngle={2}
-              dataKey="value"
-            >
-              {eventTypeData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={eventColors[entry.name] || '#8884d8'} />
-              ))}
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Track Popularity */}
-      <div>
-        <h4 className="text-sm font-medium text-foreground mb-2">Track Popularity by Event Type</h4>
-        <ResponsiveContainer width="100%" height={120}>
-          <BarChart data={trackData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="label" angle={-45} textAnchor="end" height={60} />
-            <YAxis />
-            <Tooltip 
-              formatter={(value, _name, props) => [
-                `${value} ${props.payload.eventType} events`,
-                props.payload.trackTitle
-              ]}
-            />
-            {trackData.map((entry, index) => (
-              <Bar 
-                key={`bar-${index}`}
-                dataKey="count" 
-                fill={entry.color}
-                name={entry.eventType}
-              />
-            ))}
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Event Frequency Over Time */}
-      <div>
-        <h4 className="text-sm font-medium text-foreground mb-2">Event Frequency (Last 10 min)</h4>
-        <ResponsiveContainer width="100%" height={120}>
-          <BarChart data={timeData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="count" fill="#82ca9d" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={timelineData}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="time" />
+        <YAxis />
+        <Tooltip />
+        <Line type="monotone" dataKey="count" stroke="#82ca9d" strokeWidth={2} />
+      </LineChart>
+    </ResponsiveContainer>
   );
+};
+
+const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ events, chartType = 'pie' }) => {
+  if (chartType === 'pie') {
+    return <EventTypePieChart events={events} />;
+  } else if (chartType === 'bar') {
+    return <TrackEventsBarChart events={events} />;
+  } else if (chartType === 'line') {
+    return <EventTimelineChart events={events} />;
+  }
+
+  // Default to pie chart
+  return <EventTypePieChart events={events} />;
 };
 
 export default AnalyticsCharts; 

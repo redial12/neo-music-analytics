@@ -8,7 +8,10 @@ import {
   Heart, 
   Plus,
   Volume2,
-  VolumeX
+  VolumeX,
+  RotateCcw,
+  FileText,
+  User
 } from 'lucide-react';
 
 interface Track {
@@ -57,6 +60,9 @@ const MusicPlayer: React.FC = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekStartTime, setSeekStartTime] = useState(0);
+  const [isLooping, setIsLooping] = useState(false);
+  const [username, setUsername] = useState(`user-${Math.random().toString(36).substr(2, 9)}`);
+  const [showUsernameInput, setShowUsernameInput] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement>(null);
   const currentTrack = SAMPLE_TRACKS[currentTrackIndex];
@@ -119,6 +125,23 @@ const MusicPlayer: React.FC = () => {
         duration: SAMPLE_TRACKS[newIndex].duration
       });
     }, 500);
+  };
+
+  // Handle replay (back button after 5 seconds)
+  const handleReplay = () => {
+    if (currentTime > 5) {
+      setCurrentTime(0);
+      setIsPlaying(true);
+      logEvent({
+        event_type: 'replay',
+        track_id: currentTrack.id,
+        position: 0,
+        duration: currentTrack.duration
+      });
+    } else {
+      // Normal skip behavior
+      handleSkip('prev');
+    }
   };
 
   // Handle seek start
@@ -222,6 +245,22 @@ const MusicPlayer: React.FC = () => {
     });
   };
 
+  // Handle loop toggle
+  const handleLoopToggle = () => {
+    setIsLooping(!isLooping);
+  };
+
+  // Handle fake buttons
+  const handleViewLyrics = () => {
+    // Fake button - no functionality
+    console.log('View lyrics clicked');
+  };
+
+  const handleViewArtist = () => {
+    // Fake button - no functionality
+    console.log('View artist clicked');
+  };
+
   // Update current time and handle track end
   useEffect(() => {
     const interval = setInterval(() => {
@@ -229,36 +268,48 @@ const MusicPlayer: React.FC = () => {
         setCurrentTime(prev => {
           const newTime = prev + 1;
           if (newTime >= currentTrack.duration) {
-            // Track ended, auto-play next track
-            setIsPlaying(false);
-            setCurrentTime(0);
-            
-            // Log end of current track
-            logEvent({
-              event_type: 'pause',
-              track_id: currentTrack.id,
-              position: currentTrack.duration,
-              duration: currentTrack.duration
-            });
-            
-            // Auto-play next track
-            const nextIndex = (currentTrackIndex + 1) % SAMPLE_TRACKS.length;
-            setCurrentTrackIndex(nextIndex);
-            setIsLiked(false);
-            setIsInPlaylist(false);
-            
-            // Start playing next track after a short delay
-            setTimeout(() => {
-              setIsPlaying(true);
+            if (isLooping) {
+              // Loop the same track
+              setCurrentTime(0);
               logEvent({
                 event_type: 'play',
-                track_id: SAMPLE_TRACKS[nextIndex].id,
+                track_id: currentTrack.id,
                 position: 0,
-                duration: SAMPLE_TRACKS[nextIndex].duration
+                duration: currentTrack.duration
               });
-            }, 1000);
-            
-            return 0;
+              return 0;
+            } else {
+              // Track ended, auto-play next track
+              setIsPlaying(false);
+              setCurrentTime(0);
+              
+              // Log end of current track
+              logEvent({
+                event_type: 'pause',
+                track_id: currentTrack.id,
+                position: currentTrack.duration,
+                duration: currentTrack.duration
+              });
+              
+              // Auto-play next track
+              const nextIndex = (currentTrackIndex + 1) % SAMPLE_TRACKS.length;
+              setCurrentTrackIndex(nextIndex);
+              setIsLiked(false);
+              setIsInPlaylist(false);
+              
+              // Start playing next track after a short delay
+              setTimeout(() => {
+                setIsPlaying(true);
+                logEvent({
+                  event_type: 'play',
+                  track_id: SAMPLE_TRACKS[nextIndex].id,
+                  position: 0,
+                  duration: SAMPLE_TRACKS[nextIndex].duration
+                });
+              }, 1000);
+              
+              return 0;
+            }
           }
           return newTime;
         });
@@ -266,18 +317,52 @@ const MusicPlayer: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isPlaying, currentTrack.duration, currentTrackIndex, currentTrack.id]);
+  }, [isPlaying, currentTrack.duration, currentTrackIndex, currentTrack.id, isLooping]);
 
   return (
     <div className="h-full bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-6 flex flex-col">
-      {/* Header */}
+      {/* Header with Username */}
       <div className="text-center mb-8">
         <h1 className="text-2xl font-bold text-white mb-2">Neo Music Player</h1>
         <p className="text-purple-200">Real-time analytics demo</p>
+        
+        {/* Username Display/Input */}
+        <div className="mt-4 flex justify-center">
+          {showUsernameInput ? (
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                onBlur={() => setShowUsernameInput(false)}
+                onKeyPress={(e) => e.key === 'Enter' && setShowUsernameInput(false)}
+                className="px-3 py-1 rounded bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:bg-opacity-30"
+                placeholder="Enter username"
+                autoFocus
+              />
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowUsernameInput(true)}
+              className="text-purple-200 hover:text-white transition-colors flex items-center space-x-1"
+            >
+              <User size={16} />
+              <span>{username}</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Album Art */}
-      <div className="flex justify-center mb-8">
+      {/* Album Art with Side Buttons */}
+      <div className="flex justify-center items-center mb-8">
+        <button
+          onClick={handleViewArtist}
+          className="p-3 text-white hover:text-purple-300 transition-colors mr-4"
+          title="View Artist"
+        >
+          <User size={24} />
+        </button>
+        
         <div className="relative">
           <img 
             src={currentTrack.albumArt} 
@@ -294,6 +379,14 @@ const MusicPlayer: React.FC = () => {
             </div>
           )}
         </div>
+        
+        <button
+          onClick={handleViewLyrics}
+          className="p-3 text-white hover:text-purple-300 transition-colors ml-4"
+          title="View Lyrics"
+        >
+          <FileText size={24} />
+        </button>
       </div>
 
       {/* Track Info */}
@@ -326,8 +419,9 @@ const MusicPlayer: React.FC = () => {
       {/* Controls */}
       <div className="flex items-center justify-center space-x-6 mb-8">
         <button
-          onClick={() => handleSkip('prev')}
+          onClick={handleReplay}
           className="p-3 text-white hover:text-purple-300 transition-colors"
+          title={currentTime > 5 ? "Restart Song" : "Previous Track"}
         >
           <SkipBack size={24} />
         </button>
@@ -369,6 +463,18 @@ const MusicPlayer: React.FC = () => {
           }`}
         >
           <Plus size={20} />
+        </button>
+        
+        <button
+          onClick={handleLoopToggle}
+          className={`p-3 rounded-full transition-colors ${
+            isLooping 
+              ? 'bg-blue-500 text-white' 
+              : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
+          }`}
+          title="Loop Track"
+        >
+          <RotateCcw size={20} />
         </button>
       </div>
 

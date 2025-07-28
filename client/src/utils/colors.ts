@@ -8,6 +8,7 @@ export const EVENT_COLORS: Record<string, string> = {
   'pause': '#82ca9d',     // Green
   'skip': '#ffc658',      // Yellow
   'scrub': '#ff7300',     // Orange
+  'replay': '#9c27b0',    // Deep Purple
   'like': '#ff0000',      // Red
   'unlike': '#00ff00',    // Bright Green
   'add_to_playlist': '#0000ff', // Blue
