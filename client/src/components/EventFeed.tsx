@@ -30,6 +30,10 @@ const EventFeed: React.FC<EventFeedProps> = ({ events }) => {
         return '➖';
       case 'volume_change':
         return '🔊';
+      case 'view_lyrics':
+        return '📄';
+      case 'view_artist':
+        return '👤';
       default:
         return '📝';
     }

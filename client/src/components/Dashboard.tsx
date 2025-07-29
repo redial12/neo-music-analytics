@@ -52,7 +52,7 @@ const Dashboard: React.FC = () => {
   const uniqueUserIds = [...new Set(events.map(e => e.user_id))];
 
   return (
-    <div className="h-full bg-background p-6 overflow-hidden">
+    <div className="h-full bg-background p-6 overflow-y-auto">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground mb-2">📊 Real-Time Analytics</h1>
@@ -132,16 +132,16 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Live Events Banner */}
+      {/* Live Events Banner - Longer */}
       <div className="bg-card p-4 rounded-lg border mb-6">
         <h3 className="text-lg font-semibold text-foreground mb-4">📋 Live Events</h3>
-        <div className="h-32">
+        <div className="h-48 overflow-y-auto">
           <EventFeed events={filteredEvents} />
         </div>
       </div>
 
-      {/* Analytics Charts - Separate Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Charts Row 1 - Pie and Bar Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Event Type Distribution */}
         <div className="bg-card p-4 rounded-lg border">
           <h3 className="text-lg font-semibold text-foreground mb-4">📊 Event Type Distribution</h3>
@@ -157,13 +157,13 @@ const Dashboard: React.FC = () => {
             <AnalyticsCharts events={filteredEvents} chartType="bar" />
           </div>
         </div>
-        
-        {/* Timeline Chart */}
-        <div className="bg-card p-4 rounded-lg border">
-          <h3 className="text-lg font-semibold text-foreground mb-4">⏰ Event Timeline</h3>
-          <div className="h-64">
-            <AnalyticsCharts events={filteredEvents} chartType="line" />
-          </div>
+      </div>
+
+      {/* Charts Row 2 - Timeline Chart */}
+      <div className="bg-card p-4 rounded-lg border mb-6">
+        <h3 className="text-lg font-semibold text-foreground mb-4">⏰ Event Timeline</h3>
+        <div className="h-64">
+          <AnalyticsCharts events={filteredEvents} chartType="line" />
         </div>
       </div>
     </div>

@@ -4,7 +4,7 @@ export interface AnalyticsEvent {
   timestamp: string;
   session_id: string;
   user_id: string;
-  event_type: 'play' | 'pause' | 'scrub' | 'skip' | 'replay' | 'like' | 'unlike' | 'add_to_playlist' | 'remove_from_playlist' | 'volume_change';
+  event_type: 'play' | 'pause' | 'scrub' | 'skip' | 'replay' | 'like' | 'unlike' | 'add_to_playlist' | 'remove_from_playlist' | 'volume_change' | 'view_lyrics' | 'view_artist';
   track_id: string;
   from_timestamp?: number;
   to_timestamp?: number;
@@ -62,7 +62,7 @@ class SocketManager {
       ...event,
       timestamp: new Date().toISOString(),
       session_id: this.getSessionId(),
-      user_id: this.getUserId(),
+      user_id: event.user_id || this.getUserId(),
     } as AnalyticsEvent;
 
     console.log('📝 Logging event:', enrichedEvent.event_type);

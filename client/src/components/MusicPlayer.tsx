@@ -82,7 +82,8 @@ const MusicPlayer: React.FC = () => {
         event_type: 'pause',
         track_id: currentTrack.id,
         position: currentTime,
-        duration: currentTrack.duration
+        duration: currentTrack.duration,
+        user_id: username
       });
     } else {
       setIsPlaying(true);
@@ -90,7 +91,8 @@ const MusicPlayer: React.FC = () => {
         event_type: 'play',
         track_id: currentTrack.id,
         position: currentTime,
-        duration: currentTrack.duration
+        duration: currentTrack.duration,
+        user_id: username
       });
     }
   };
@@ -102,7 +104,8 @@ const MusicPlayer: React.FC = () => {
       event_type: 'skip',
       track_id: currentTrack.id,
       position: currentTime,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      user_id: username
     });
 
     const newIndex = direction === 'next' 
@@ -122,7 +125,8 @@ const MusicPlayer: React.FC = () => {
         event_type: 'play',
         track_id: SAMPLE_TRACKS[newIndex].id,
         position: 0,
-        duration: SAMPLE_TRACKS[newIndex].duration
+        duration: SAMPLE_TRACKS[newIndex].duration,
+        user_id: username
       });
     }, 500);
   };
@@ -130,14 +134,15 @@ const MusicPlayer: React.FC = () => {
   // Handle replay (back button after 5 seconds)
   const handleReplay = () => {
     if (currentTime > 5) {
-      setCurrentTime(0);
-      setIsPlaying(true);
       logEvent({
         event_type: 'replay',
         track_id: currentTrack.id,
-        position: 0,
-        duration: currentTrack.duration
+        position: currentTime, // Log the position where replay was hit
+        duration: currentTrack.duration,
+        user_id: username
       });
+      setCurrentTime(0);
+      setIsPlaying(true);
     } else {
       // Normal skip behavior
       handleSkip('prev');
@@ -167,7 +172,8 @@ const MusicPlayer: React.FC = () => {
         track_id: currentTrack.id,
         from_timestamp: oldTime,
         to_timestamp: newTime,
-        duration: currentTrack.duration
+        duration: currentTrack.duration,
+        user_id: username
       });
       
       setIsSeeking(false);
@@ -189,7 +195,8 @@ const MusicPlayer: React.FC = () => {
       event_type: 'volume_change',
       track_id: currentTrack.id,
       volume: newVolume,
-      position: currentTime
+      position: currentTime,
+      user_id: username
     });
   };
 
@@ -203,7 +210,8 @@ const MusicPlayer: React.FC = () => {
         event_type: 'volume_change',
         track_id: currentTrack.id,
         volume: lastVolume,
-        position: currentTime
+        position: currentTime,
+        user_id: username
       });
     } else {
       // Mute: save current volume and set to 0
@@ -214,7 +222,8 @@ const MusicPlayer: React.FC = () => {
         event_type: 'volume_change',
         track_id: currentTrack.id,
         volume: 0,
-        position: currentTime
+        position: currentTime,
+        user_id: username
       });
     }
   };
@@ -227,7 +236,8 @@ const MusicPlayer: React.FC = () => {
       event_type: newLikedState ? 'like' : 'unlike',
       track_id: currentTrack.id,
       liked: newLikedState,
-      position: currentTime
+      position: currentTime,
+      user_id: username
     });
   };
 
@@ -241,7 +251,8 @@ const MusicPlayer: React.FC = () => {
       event_type: newPlaylistState ? 'add_to_playlist' : 'remove_from_playlist',
       track_id: currentTrack.id,
       in_playlist: newPlaylistState,
-      position: currentTime
+      position: currentTime,
+      user_id: username
     });
   };
 
@@ -250,15 +261,24 @@ const MusicPlayer: React.FC = () => {
     setIsLooping(!isLooping);
   };
 
-  // Handle fake buttons
+  // Handle view lyrics
   const handleViewLyrics = () => {
-    // Fake button - no functionality
-    console.log('View lyrics clicked');
+    logEvent({
+      event_type: 'view_lyrics',
+      track_id: currentTrack.id,
+      position: currentTime,
+      user_id: username
+    });
   };
 
+  // Handle view artist
   const handleViewArtist = () => {
-    // Fake button - no functionality
-    console.log('View artist clicked');
+    logEvent({
+      event_type: 'view_artist',
+      track_id: currentTrack.id,
+      position: currentTime,
+      user_id: username
+    });
   };
 
   // Update current time and handle track end
@@ -269,13 +289,14 @@ const MusicPlayer: React.FC = () => {
           const newTime = prev + 1;
           if (newTime >= currentTrack.duration) {
             if (isLooping) {
-              // Loop the same track
+              // Loop the same track - log as replay instead of play
               setCurrentTime(0);
               logEvent({
-                event_type: 'play',
+                event_type: 'replay',
                 track_id: currentTrack.id,
-                position: 0,
-                duration: currentTrack.duration
+                position: currentTrack.duration,
+                duration: currentTrack.duration,
+                user_id: username
               });
               return 0;
             } else {
@@ -288,7 +309,8 @@ const MusicPlayer: React.FC = () => {
                 event_type: 'pause',
                 track_id: currentTrack.id,
                 position: currentTrack.duration,
-                duration: currentTrack.duration
+                duration: currentTrack.duration,
+                user_id: username
               });
               
               // Auto-play next track
@@ -304,7 +326,8 @@ const MusicPlayer: React.FC = () => {
                   event_type: 'play',
                   track_id: SAMPLE_TRACKS[nextIndex].id,
                   position: 0,
-                  duration: SAMPLE_TRACKS[nextIndex].duration
+                  duration: SAMPLE_TRACKS[nextIndex].duration,
+                  user_id: username
                 });
               }, 1000);
               
@@ -317,7 +340,7 @@ const MusicPlayer: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isPlaying, currentTrack.duration, currentTrackIndex, currentTrack.id, isLooping]);
+  }, [isPlaying, currentTrack.duration, currentTrackIndex, currentTrack.id, isLooping, username]);
 
   return (
     <div className="h-full bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-6 flex flex-col">

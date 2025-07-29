@@ -13,7 +13,9 @@ export const EVENT_COLORS: Record<string, string> = {
   'unlike': '#00ff00',    // Bright Green
   'add_to_playlist': '#0000ff', // Blue
   'remove_from_playlist': '#ffff00', // Yellow
-  'volume_change': '#ff7300' // Orange
+  'volume_change': '#e91e63', // Pink (changed from orange to be different from scrub)
+  'view_lyrics': '#3f51b5', // Indigo
+  'view_artist': '#009688' // Teal
 };
 
 // Generate consistent colors for event types
