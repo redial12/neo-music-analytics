@@ -121,6 +121,63 @@ const EventFeed: React.FC<EventFeedProps> = ({ events }) => {
                   Position: {formatTime(event.position)}
                 </div>
               )}
+
+              {/* Enhanced context details */}
+              {event.play_context && (
+                <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                  <div>🎵 Play Context:</div>
+                  <div className="ml-2">
+                    {event.play_context.previous_track_id && (
+                      <div>Previous: {event.play_context.previous_track_id}</div>
+                    )}
+                    <div>Time since last play: {event.play_context.time_since_last_play.toFixed(1)}s</div>
+                    <div>Source: {event.play_context.source}</div>
+                    <div>Autoplay: {event.play_context.is_autoplay ? 'Yes' : 'No'}</div>
+                  </div>
+                </div>
+              )}
+
+              {event.scrub_context && (
+                <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                  <div>⏩ Scrub Context:</div>
+                  <div className="ml-2">
+                    <div>Direction: {event.scrub_context.scrub_direction}</div>
+                    <div>Distance: {event.scrub_context.scrub_distance.toFixed(1)}s</div>
+                    <div>Was playing: {event.scrub_context.was_playing_before_scrub ? 'Yes' : 'No'}</div>
+                  </div>
+                </div>
+              )}
+
+              {event.skip_context && (
+                <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                  <div>⏭ Skip Context:</div>
+                  <div className="ml-2">
+                    <div>Direction: {event.skip_context.skip_direction}</div>
+                    <div>Time listened: {event.skip_context.time_listened_before_skip.toFixed(1)}s</div>
+                    <div>Reason: {event.skip_context.skip_reason}</div>
+                  </div>
+                </div>
+              )}
+
+              {event.volume_context && (
+                <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                  <div>🔊 Volume Context:</div>
+                  <div className="ml-2">
+                    <div>Previous: {Math.round(event.volume_context.previous_volume * 100)}%</div>
+                    <div>Change: {event.volume_context.volume_change_amount > 0 ? '+' : ''}{Math.round(event.volume_context.volume_change_amount * 100)}%</div>
+                    <div>Mute action: {event.volume_context.is_mute_action ? 'Yes' : 'No'}</div>
+                  </div>
+                </div>
+              )}
+
+              {event.engagement_context && (
+                <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                  <div>❤️ Engagement Context:</div>
+                  <div className="ml-2">
+                    <div>Time to like: {event.engagement_context.time_to_like.toFixed(1)}s</div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { logEvent } from '../utils/socket';
+import { eventContextManager } from '../utils/eventContext';
 import { 
   Play, 
   Pause, 
@@ -78,6 +79,7 @@ const MusicPlayer: React.FC = () => {
   const handlePlayPause = () => {
     if (isPlaying) {
       setIsPlaying(false);
+      eventContextManager.trackStopped();
       logEvent({
         event_type: 'pause',
         track_id: currentTrack.id,
@@ -87,12 +89,14 @@ const MusicPlayer: React.FC = () => {
       });
     } else {
       setIsPlaying(true);
+      eventContextManager.trackStarted(currentTrack.id);
       logEvent({
         event_type: 'play',
         track_id: currentTrack.id,
         position: currentTime,
         duration: currentTrack.duration,
-        user_id: username
+        user_id: username,
+        play_context: eventContextManager.getPlayContext(currentTrack.id, false, 'manual')
       });
     }
   };
@@ -105,7 +109,8 @@ const MusicPlayer: React.FC = () => {
       track_id: currentTrack.id,
       position: currentTime,
       timestamp: new Date().toISOString(),
-      user_id: username
+      user_id: username,
+      skip_context: eventContextManager.getSkipContext(direction, 'user_initiated')
     });
 
     const newIndex = direction === 'next' 
@@ -121,12 +126,14 @@ const MusicPlayer: React.FC = () => {
     // Auto-play track after a short delay (for both directions)
     setTimeout(() => {
       setIsPlaying(true);
+      eventContextManager.trackStarted(SAMPLE_TRACKS[newIndex].id);
       logEvent({
         event_type: 'play',
         track_id: SAMPLE_TRACKS[newIndex].id,
         position: 0,
         duration: SAMPLE_TRACKS[newIndex].duration,
-        user_id: username
+        user_id: username,
+        play_context: eventContextManager.getPlayContext(SAMPLE_TRACKS[newIndex].id, true, 'skip')
       });
     }, 500);
   };
@@ -143,6 +150,15 @@ const MusicPlayer: React.FC = () => {
       });
       setCurrentTime(0);
       setIsPlaying(true);
+      eventContextManager.trackStarted(currentTrack.id);
+      logEvent({
+        event_type: 'play',
+        track_id: currentTrack.id,
+        position: 0,
+        duration: currentTrack.duration,
+        user_id: username,
+        play_context: eventContextManager.getPlayContext(currentTrack.id, true, 'replay')
+      });
     } else {
       // Normal skip behavior
       handleSkip('prev');
@@ -173,7 +189,8 @@ const MusicPlayer: React.FC = () => {
         from_timestamp: oldTime,
         to_timestamp: newTime,
         duration: currentTrack.duration,
-        user_id: username
+        user_id: username,
+        scrub_context: eventContextManager.getScrubContext(oldTime, newTime)
       });
       
       setIsSeeking(false);
@@ -196,7 +213,8 @@ const MusicPlayer: React.FC = () => {
       track_id: currentTrack.id,
       volume: newVolume,
       position: currentTime,
-      user_id: username
+      user_id: username,
+      volume_context: eventContextManager.getVolumeContext(newVolume)
     });
   };
 
@@ -211,7 +229,8 @@ const MusicPlayer: React.FC = () => {
         track_id: currentTrack.id,
         volume: lastVolume,
         position: currentTime,
-        user_id: username
+        user_id: username,
+        volume_context: eventContextManager.getVolumeContext(lastVolume)
       });
     } else {
       // Mute: save current volume and set to 0
@@ -223,7 +242,8 @@ const MusicPlayer: React.FC = () => {
         track_id: currentTrack.id,
         volume: 0,
         position: currentTime,
-        user_id: username
+        user_id: username,
+        volume_context: eventContextManager.getVolumeContext(0)
       });
     }
   };
@@ -232,12 +252,19 @@ const MusicPlayer: React.FC = () => {
   const handleLike = () => {
     const newLikedState = !isLiked;
     setIsLiked(newLikedState);
+    
+    if (newLikedState) {
+      // Start tracking like engagement when track starts playing
+      eventContextManager.startLikeTracking();
+    }
+    
     logEvent({
       event_type: newLikedState ? 'like' : 'unlike',
       track_id: currentTrack.id,
       liked: newLikedState,
       position: currentTime,
-      user_id: username
+      user_id: username,
+      engagement_context: eventContextManager.getEngagementContext()
     });
   };
 
@@ -298,11 +325,21 @@ const MusicPlayer: React.FC = () => {
                 duration: currentTrack.duration,
                 user_id: username
               });
+              eventContextManager.trackStarted(currentTrack.id);
+              logEvent({
+                event_type: 'play',
+                track_id: currentTrack.id,
+                position: 0,
+                duration: currentTrack.duration,
+                user_id: username,
+                play_context: eventContextManager.getPlayContext(currentTrack.id, true, 'replay')
+              });
               return 0;
             } else {
               // Track ended, auto-play next track
               setIsPlaying(false);
               setCurrentTime(0);
+              eventContextManager.trackStopped();
               
               // Log end of current track
               logEvent({
@@ -322,12 +359,14 @@ const MusicPlayer: React.FC = () => {
               // Start playing next track after a short delay
               setTimeout(() => {
                 setIsPlaying(true);
+                eventContextManager.trackStarted(SAMPLE_TRACKS[nextIndex].id);
                 logEvent({
                   event_type: 'play',
                   track_id: SAMPLE_TRACKS[nextIndex].id,
                   position: 0,
                   duration: SAMPLE_TRACKS[nextIndex].duration,
-                  user_id: username
+                  user_id: username,
+                  play_context: eventContextManager.getPlayContext(SAMPLE_TRACKS[nextIndex].id, true, 'autoplay')
                 });
               }, 1000);
               

@@ -1,5 +1,35 @@
 import { io, Socket } from 'socket.io-client';
 
+// Event-specific context interfaces
+export interface PlayContext {
+  previous_track_id?: string;
+  time_since_last_play: number; // seconds
+  is_autoplay: boolean;
+  source: 'manual' | 'autoplay' | 'skip' | 'replay';
+}
+
+export interface ScrubContext {
+  scrub_direction: 'forward' | 'backward';
+  scrub_distance: number; // seconds
+  was_playing_before_scrub: boolean;
+}
+
+export interface SkipContext {
+  skip_direction: 'next' | 'prev';
+  time_listened_before_skip: number;
+  skip_reason?: 'user_initiated' | 'track_ended' | 'error';
+}
+
+export interface VolumeContext {
+  previous_volume: number;
+  volume_change_amount: number;
+  is_mute_action: boolean;
+}
+
+export interface EngagementContext {
+  time_to_like: number; // seconds from play to like
+}
+
 export interface AnalyticsEvent {
   timestamp: string;
   session_id: string;
@@ -13,6 +43,14 @@ export interface AnalyticsEvent {
   position?: number;
   liked?: boolean;
   in_playlist?: boolean;
+  
+  // Event-specific context
+  play_context?: PlayContext;
+  scrub_context?: ScrubContext;
+  skip_context?: SkipContext;
+  volume_context?: VolumeContext;
+  engagement_context?: EngagementContext;
+  
   [key: string]: any;
 }
 
