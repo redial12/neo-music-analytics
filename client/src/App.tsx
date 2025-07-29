@@ -35,12 +35,12 @@ function App() {
   }, []);
 
   return (
-    <div className="flex h-screen bg-background">
-      <div className="w-1/2 border-r border-border">
+    <div className="flex h-screen bg-gray-900">
+      <div className="w-1/2 border-r border-gray-700 overflow-y-auto">
         <Dashboard />
       </div>
       
-      <div className="w-1/2">
+      <div className="w-1/2 overflow-y-auto">
         <MusicPlayer />
       </div>
     </div>
