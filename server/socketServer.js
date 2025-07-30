@@ -9,18 +9,40 @@ const app = express();
 const server = createServer(app);
 
 // Middleware
-app.use(helmet());
-app.use(cors());
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: false
+}));
+app.use(cors({
+  origin: [
+    "http://localhost:5173", 
+    "http://127.0.0.1:5173", 
+    "https://neo-music-analytics.netlify.app",
+    /https:\/\/.*\.netlify\.app$/,
+    "https://neo-analytics-backend.fly.dev"
+  ],
+  methods: ["GET", "POST", "OPTIONS"],
+  credentials: true
+}));
 app.use(express.json());
 
 // Socket.IO setup
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173", "https://neo-music-analytics.netlify.app"],
-    methods: ["GET", "POST"],
+    origin: [
+      "http://localhost:5173", 
+      "http://127.0.0.1:5173", 
+      "https://neo-music-analytics.netlify.app",
+      /https:\/\/.*\.netlify\.app$/,
+      "https://neo-analytics-backend.fly.dev"
+    ],
+    methods: ["GET", "POST", "OPTIONS"],
     credentials: true
   },
-  allowEIO3: true
+  allowEIO3: true,
+  transports: ['websocket', 'polling'],
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 // Kafka setup
@@ -76,6 +98,8 @@ async function initializeKafka() {
 // Socket.IO event handlers
 io.on('connection', (socket) => {
   console.log('🔌 New client connected:', socket.id);
+  console.log('🔗 Client origin:', socket.handshake.headers.origin);
+  console.log('🔗 Client user-agent:', socket.handshake.headers['user-agent']);
   
   // Handle music player events (legacy support)
   socket.on('log_event', async (event) => {
@@ -225,16 +249,22 @@ const PORT = process.env.PORT || 3001;
 
 async function startServer() {
   try {
+    console.log('🔄 Initializing server...');
+    console.log('🔧 Environment:', process.env.NODE_ENV || 'development');
+    console.log('🔧 Port:', PORT);
+    
     await initializeKafka();
     
     server.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on 0.0.0.0:${PORT}`);
-      console.log(`📊 Dashboard: http://0.0.0.0:${PORT}/health`);
-      console.log(`📡 Event ingestion: POST http://localhost:${PORT}/produce`);
+      console.log(`📊 Health check: https://neo-analytics-backend.fly.dev/health`);
+      console.log(`🔌 Socket.IO endpoint: https://neo-analytics-backend.fly.dev/`);
+      console.log(`📡 Event ingestion: POST https://neo-analytics-backend.fly.dev/produce`);
       console.log(`🎵 Ready to receive events`);
       if (!kafkaConnected) {
         console.log(`⚠️ Kafka not available - HTTP endpoints work, but events won't be streamed`);
       }
+      console.log('✅ Server startup complete');
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

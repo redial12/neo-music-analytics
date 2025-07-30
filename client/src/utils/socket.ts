@@ -62,29 +62,49 @@ class SocketManager {
     if (this.socket) return;
 
     // Use environment-based URL for production deployment  
-    const socketUrl = "https://neo-analytics-backend.fly.dev/"; // Add explicit path
+    const socketUrl = "https://neo-analytics-backend.fly.dev/";
 
     this.socket = io(socketUrl, {
-      transports: ['websocket','polling'], // ONLY use polling for now
-      timeout: 20000
+      transports: ['polling', 'websocket'], // Start with polling for HTTPS, then upgrade
+      timeout: 20000,
+      forceNew: true,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+      randomizationFactor: 0.5
     });
 
     console.log('🔄 Attempting to connect to:', socketUrl);
+    console.log('🔧 Transport order:', ['polling', 'websocket']);
     
     this.socket.on('connect', () => {
       console.log('🔌 Connected to server');
+      console.log('🚀 Transport used:', this.socket?.io.engine.transport.name);
       this.isConnected = true;
     });
 
-    this.socket.on('disconnect', () => {
-      console.log('🔌 Disconnected from server');
+    this.socket.on('disconnect', (reason: string) => {
+      console.log('🔌 Disconnected from server, reason:', reason);
       this.isConnected = false;
     });
 
     this.socket.on('connect_error', (error: any) => {
       console.error('❌ Connection error:', error);
-      console.error('❌ Error details:', error.message, error.type);
+      console.error('❌ Error details:', error.message, error.type, error.description);
+      console.error('❌ Transport:', error.transport);
       this.isConnected = false;
+    });
+
+    this.socket.on('reconnect', (attemptNumber: number) => {
+      console.log('🔄 Reconnected after', attemptNumber, 'attempts');
+    });
+
+    this.socket.on('reconnect_attempt', (attemptNumber: number) => {
+      console.log('🔄 Reconnection attempt', attemptNumber);
+    });
+
+    this.socket.on('reconnect_error', (error: any) => {
+      console.error('❌ Reconnection error:', error);
     });
   }
 
