@@ -65,9 +65,8 @@ class SocketManager {
     const socketUrl = "https://neo-analytics-backend.fly.dev"; // Use standard HTTPS port
 
     this.socket = io(socketUrl, {
-      transports: ['polling', 'websocket'], // Try polling first
-      timeout: 20000,
-      forceNew: true
+      transports: ['polling'], // ONLY use polling for now
+      timeout: 20000
     });
 
     console.log('🔄 Attempting to connect to:', socketUrl);
