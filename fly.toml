@@ -19,10 +19,6 @@ primary_region = "iad"
   [[services.ports]]
     port = 443
     handlers = ["http", "tls"]
-  
-  [[services.ports]]
-    port = 3001
-    handlers = ["http"]
 
 [mounts]
   source = "kafka_data"
