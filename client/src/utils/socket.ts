@@ -62,9 +62,7 @@ class SocketManager {
     if (this.socket) return;
 
     // Use environment-based URL for production deployment
-    const socketUrl = import.meta.env.MODE === 'production'
-      ? "https://neo-analytics-backend.fly.dev" // Your deployed backend
-      : "https://neo-analytics-backend.fly.dev"; // Use deployed backend for local testing too
+    const socketUrl = "https://neo-analytics-backend.fly.dev"; // Always use deployed backend
 
     this.socket = io(socketUrl, {
       transports: ['websocket', 'polling'],
