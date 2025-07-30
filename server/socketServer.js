@@ -176,29 +176,38 @@ app.post('/produce', async (req, res) => {
     const event = req.body;
     
     // Validate required fields
-    if (!event.eventType) {
+    if (!event.eventType && !event.event_type) {
       return res.status(400).json({ 
         success: false, 
         error: 'eventType is required' 
       });
     }
     
-    // Enrich event with metadata
+    // Enrich event with metadata and normalize context fields
     const enrichedEvent = {
       ...event,
+      event_type: event.eventType || event.event_type,
+      user_id: event.userId || event.user_id || 'anonymous',
+      track_id: event.trackId || event.track_id,
+      session_id: event.sessionId || event.session_id,
       timestamp: event.timestamp || new Date().toISOString(),
-      userId: event.userId || 'anonymous',
-      serverTimestamp: new Date().toISOString()
+      server_timestamp: new Date().toISOString(),
+      // Normalize context fields for frontend
+      play_context: event.playContext || event.play_context,
+      scrub_context: event.scrubContext || event.scrub_context,
+      skip_context: event.skipContext || event.skip_context,
+      volume_context: event.volumeContext || event.volume_context,
+      engagement_context: event.engagementContext || event.engagement_context
     };
     
-    console.log('📝 Producing event:', enrichedEvent.eventType);
+    console.log('📝 Producing event:', enrichedEvent.event_type);
     
     if (kafkaConnected) {
-      // Send to Kafka with userId as key
+      // Send to Kafka with user_id as key
       await producer.send({
         topic: 'user_events',
         messages: [{ 
-          key: enrichedEvent.userId,
+          key: enrichedEvent.user_id,
           value: JSON.stringify(enrichedEvent) 
         }]
       });
@@ -208,7 +217,7 @@ app.post('/produce', async (req, res) => {
     
     res.json({ 
       success: true, 
-      eventType: enrichedEvent.eventType,
+      event_type: enrichedEvent.event_type,
       timestamp: enrichedEvent.timestamp,
       kafka_connected: kafkaConnected
     });
