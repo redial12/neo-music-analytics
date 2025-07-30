@@ -62,7 +62,7 @@ class SocketManager {
     if (this.socket) return;
 
     // Use environment-based URL for production deployment  
-    const socketUrl = "https://neo-analytics-backend.fly.dev/socket.io/"; // Add explicit path
+    const socketUrl = "https://neo-analytics-backend.fly.dev/"; // Add explicit path
 
     this.socket = io(socketUrl, {
       transports: ['websocket','polling'], // ONLY use polling for now
