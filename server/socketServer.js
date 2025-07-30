@@ -79,8 +79,16 @@ async function initializeKafka() {
           const data = JSON.parse(message.value.toString());
           console.log('📨 Received Kafka message:', data.eventType || data.event_type);
           
+          // Normalize event structure for dashboard (eventType -> event_type, userId -> user_id)
+          const normalizedEvent = {
+            ...data,
+            event_type: data.eventType || data.event_type,
+            user_id: data.userId || data.user_id,
+            track_id: data.trackId || data.track_id
+          };
+          
           // Broadcast to all dashboard clients
-          io.to('dashboard').emit('new_event', data);
+          io.to('dashboard').emit('new_event', normalizedEvent);
         } catch (error) {
           console.error('❌ Error processing Kafka message:', error);
         }
