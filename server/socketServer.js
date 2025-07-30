@@ -24,14 +24,10 @@ const io = new Server(server, {
 // Kafka setup
 const kafka = new Kafka({
   clientId: 'neo-analytics-server',
-  brokers: ['localhost:9092']
+  brokers: ['localhost:29092']
 });
 
-const { Partitioners } = require('kafkajs');
-
-const producer = kafka.producer({
-  createPartitioner: Partitioners.LegacyPartitioner
-});
+const producer = kafka.producer();
 const consumer = kafka.consumer({ groupId: 'dashboard-consumer' });
 
 // Store connected dashboard clients
@@ -229,9 +225,9 @@ async function startServer() {
   try {
     await initializeKafka();
     
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📊 Dashboard: http://localhost:${PORT}/health`);
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server running on 0.0.0.0:${PORT}`);
+      console.log(`📊 Dashboard: http://0.0.0.0:${PORT}/health`);
       console.log(`📡 Event ingestion: POST http://localhost:${PORT}/produce`);
       console.log(`🎵 Ready to receive events`);
       if (!kafkaConnected) {

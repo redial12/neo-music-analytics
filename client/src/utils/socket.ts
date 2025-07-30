@@ -61,7 +61,12 @@ class SocketManager {
   connect() {
     if (this.socket) return;
 
-    this.socket = io('http://localhost:3001', {
+    // Use environment-based URL for production deployment
+    const socketUrl = import.meta.env.MODE === 'production'
+      ? "https://neo-analytics-backend.fly.dev" // Your deployed backend
+      : "https://neo-analytics-backend.fly.dev"; // Use deployed backend for local testing too
+
+    this.socket = io(socketUrl, {
       transports: ['websocket', 'polling'],
       timeout: 20000,
     });
