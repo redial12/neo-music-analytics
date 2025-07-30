@@ -20,8 +20,8 @@ export KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
 export KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
 export CLUSTER_ID='MkU3OEVBNTcwNTJENDM2Qk'
 
-# Reduce Kafka memory usage for 512MB container
-export KAFKA_HEAP_OPTS="-Xmx256m -Xms128m"
+# Increase Kafka memory usage for 2GB container
+export KAFKA_HEAP_OPTS="-Xmx512m -Xms256m"
 
 # Clean up filesystem artifacts that Kafka doesn't like
 rm -rf /var/lib/kafka/data/lost+found

@@ -24,8 +24,8 @@ primary_region = "iad"
   source = "kafka_data"
   destination = "/var/lib/kafka/data"
 
-# Keep memory usage low
+# Increased memory for Kafka and Node.js
 [vm]
-  memory = "512mb"
+  memory = "2gb"
   cpu_kind = "shared"
   cpus = 1
