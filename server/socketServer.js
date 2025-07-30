@@ -16,9 +16,11 @@ app.use(express.json());
 // Socket.IO setup
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
-    methods: ["GET", "POST"]
-  }
+    origin: ["http://localhost:5173", "http://127.0.0.1:5173", "https://neo-music-analytics.netlify.app"],
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  allowEIO3: true
 });
 
 // Kafka setup

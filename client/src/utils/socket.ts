@@ -65,10 +65,13 @@ class SocketManager {
     const socketUrl = "https://neo-analytics-backend.fly.dev"; // Use standard HTTPS port
 
     this.socket = io(socketUrl, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'], // Try polling first
       timeout: 20000,
+      forceNew: true
     });
 
+    console.log('🔄 Attempting to connect to:', socketUrl);
+    
     this.socket.on('connect', () => {
       console.log('🔌 Connected to server');
       this.isConnected = true;
@@ -81,6 +84,7 @@ class SocketManager {
 
     this.socket.on('connect_error', (error: any) => {
       console.error('❌ Connection error:', error);
+      console.error('❌ Error details:', error.message, error.type);
       this.isConnected = false;
     });
   }
