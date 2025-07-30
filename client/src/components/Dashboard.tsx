@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { onNewEvent, AnalyticsEvent } from '../utils/socket';
+import { onNewEvent, AnalyticsEvent, getConnectionStatus } from '../utils/socket';
 import { TRACK_TITLES } from '../utils/colors';
 import EventFeed from './EventFeed';
 import AnalyticsCharts from './AnalyticsCharts';
@@ -24,13 +24,23 @@ const Dashboard: React.FC = () => {
     userId: ''
   });
 
-  // Listen for new events
+  // Listen for new events - wait for WebSocket connection
   useEffect(() => {
-    console.log('🔍 Dashboard: Setting up new event listener');
-    onNewEvent((event: AnalyticsEvent) => {
-      console.log('📨 Dashboard: Received new event:', event.event_type, event);
-      setEvents(prev => [event, ...prev].slice(0, 100)); // Keep last 100 events
-    });
+    const setupEventListener = () => {
+      if (getConnectionStatus()) {
+        console.log('🔍 Dashboard: Setting up new event listener (WebSocket ready)');
+        onNewEvent((event: AnalyticsEvent) => {
+          console.log('📨 Dashboard: Received new event:', event.event_type, event);
+          setEvents(prev => [event, ...prev].slice(0, 100)); // Keep last 100 events
+        });
+      } else {
+        console.log('⏳ Dashboard: Waiting for WebSocket connection...');
+        setTimeout(setupEventListener, 100);
+      }
+    };
+    
+    // Start checking for connection
+    setTimeout(setupEventListener, 100);
   }, []);
 
   // Apply filters
