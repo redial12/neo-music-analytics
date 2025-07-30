@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { logEvent } from '../utils/socket';
+import { logMusicEvent } from '../utils/api';
 import { eventContextManager } from '../utils/eventContext';
 import { 
   Play, 
@@ -82,7 +82,7 @@ const MusicPlayer: React.FC = () => {
     if (isPlaying) {
       setIsPlaying(false);
       eventContextManager.trackStopped();
-      logEvent({
+      logMusicEvent({
         event_type: 'pause',
         track_id: currentTrack.id,
         position: currentTime,
@@ -92,7 +92,7 @@ const MusicPlayer: React.FC = () => {
     } else {
       setIsPlaying(true);
       eventContextManager.trackStarted(currentTrack.id);
-      logEvent({
+      logMusicEvent({
         event_type: 'play',
         track_id: currentTrack.id,
         position: currentTime,
@@ -120,7 +120,7 @@ const MusicPlayer: React.FC = () => {
     setIsInPlaylist(false);
     
     // Log skip event
-    logEvent({
+    logMusicEvent({
       event_type: 'skip',
       track_id: currentTrack.id,
       position: currentTime,
@@ -132,7 +132,7 @@ const MusicPlayer: React.FC = () => {
     // If currently playing, start playing the new track
     if (isPlaying) {
       eventContextManager.trackStarted(SAMPLE_TRACKS[newIndex].id);
-      logEvent({
+      logMusicEvent({
         event_type: 'play',
         track_id: SAMPLE_TRACKS[newIndex].id,
         position: 0,
@@ -148,7 +148,7 @@ const MusicPlayer: React.FC = () => {
     if (currentTime > 5) {
       // Restart current song
       setCurrentTime(0);
-      logEvent({
+      logMusicEvent({
         event_type: 'replay',
         track_id: currentTrack.id,
         position: currentTime,
@@ -156,7 +156,7 @@ const MusicPlayer: React.FC = () => {
         user_id: username
       });
       eventContextManager.trackStarted(currentTrack.id);
-      logEvent({
+      logMusicEvent({
         event_type: 'play',
         track_id: currentTrack.id,
         position: 0,
@@ -186,7 +186,7 @@ const MusicPlayer: React.FC = () => {
     if (isSeeking) {
       const seekDistance = Math.abs(currentTime - seekStartTime);
       if (seekDistance > 1) {
-        logEvent({
+        logMusicEvent({
           event_type: 'scrub',
           track_id: currentTrack.id,
           from_timestamp: seekStartTime,
@@ -214,7 +214,7 @@ const MusicPlayer: React.FC = () => {
   const handleVolumeEnd = () => {
     const volumeChange = Math.abs(volume - lastVolume);
     if (volumeChange > 0.05) {
-      logEvent({
+      logMusicEvent({
         event_type: 'volume_change',
         track_id: currentTrack.id,
         position: currentTime,
@@ -232,7 +232,7 @@ const MusicPlayer: React.FC = () => {
     if (isMuted) {
       setIsMuted(false);
       setVolume(lastVolume);
-      logEvent({
+      logMusicEvent({
         event_type: 'volume_change',
         track_id: currentTrack.id,
         position: currentTime,
@@ -244,7 +244,7 @@ const MusicPlayer: React.FC = () => {
     } else {
       setIsMuted(true);
       setLastVolume(volume);
-      logEvent({
+      logMusicEvent({
         event_type: 'volume_change',
         track_id: currentTrack.id,
         position: currentTime,
@@ -263,7 +263,7 @@ const MusicPlayer: React.FC = () => {
     }
     
     setIsLiked(!isLiked);
-    logEvent({
+    logMusicEvent({
       event_type: isLiked ? 'unlike' : 'like',
       track_id: currentTrack.id,
       position: currentTime,
@@ -281,7 +281,7 @@ const MusicPlayer: React.FC = () => {
   // Handle add to playlist
   const handleAddToPlaylist = () => {
     setIsInPlaylist(!isInPlaylist);
-    logEvent({
+    logMusicEvent({
       event_type: isInPlaylist ? 'remove_from_playlist' : 'add_to_playlist',
       track_id: currentTrack.id,
       position: currentTime,
@@ -298,7 +298,7 @@ const MusicPlayer: React.FC = () => {
 
   // Handle view lyrics
   const handleViewLyrics = () => {
-    logEvent({
+    logMusicEvent({
       event_type: 'view_lyrics',
       track_id: currentTrack.id,
       position: currentTime,
@@ -309,7 +309,7 @@ const MusicPlayer: React.FC = () => {
 
   // Handle view artist
   const handleViewArtist = () => {
-    logEvent({
+    logMusicEvent({
       event_type: 'view_artist',
       track_id: currentTrack.id,
       position: currentTime,
@@ -328,7 +328,7 @@ const MusicPlayer: React.FC = () => {
             if (isLooping) {
               // Loop the same track - log as replay instead of play
               setCurrentTime(0);
-              logEvent({
+              logMusicEvent({
                 event_type: 'replay',
                 track_id: currentTrack.id,
                 position: currentTrack.duration,
@@ -336,7 +336,7 @@ const MusicPlayer: React.FC = () => {
                 user_id: username
               });
               eventContextManager.trackStarted(currentTrack.id);
-              logEvent({
+              logMusicEvent({
                 event_type: 'play',
                 track_id: currentTrack.id,
                 position: 0,
@@ -352,7 +352,7 @@ const MusicPlayer: React.FC = () => {
               eventContextManager.trackStopped();
               
               // Log end of current track
-              logEvent({
+              logMusicEvent({
                 event_type: 'pause',
                 track_id: currentTrack.id,
                 position: currentTrack.duration,
@@ -370,7 +370,7 @@ const MusicPlayer: React.FC = () => {
               setTimeout(() => {
                 setIsPlaying(true);
                 eventContextManager.trackStarted(SAMPLE_TRACKS[nextIndex].id);
-                logEvent({
+                logMusicEvent({
                   event_type: 'play',
                   track_id: SAMPLE_TRACKS[nextIndex].id,
                   position: 0,
