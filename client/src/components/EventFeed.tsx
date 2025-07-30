@@ -15,11 +15,9 @@ import {
   Plus,
   Minus,
   Volume2,
-  VolumeX,
   FileText,
   User as UserIcon,
-  Clock,
-  Zap
+  Clock
 } from 'lucide-react';
 
 interface EventFeedProps {
