@@ -61,11 +61,11 @@ class SocketManager {
   connect() {
     if (this.socket) return;
 
-    // Use environment-based URL for production deployment
-    const socketUrl = "https://neo-analytics-backend.fly.dev"; // Use standard HTTPS port
+    // Use environment-based URL for production deployment  
+    const socketUrl = "https://neo-analytics-backend.fly.dev/socket.io/"; // Add explicit path
 
     this.socket = io(socketUrl, {
-      transports: ['polling'], // ONLY use polling for now
+      transports: ['websocket','polling'], // ONLY use polling for now
       timeout: 20000
     });
 
