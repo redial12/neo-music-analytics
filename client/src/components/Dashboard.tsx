@@ -26,13 +26,16 @@ const Dashboard: React.FC = () => {
 
   // Listen for new events
   useEffect(() => {
+    console.log('🔍 Dashboard: Setting up new event listener');
     onNewEvent((event: AnalyticsEvent) => {
+      console.log('📨 Dashboard: Received new event:', event.event_type, event);
       setEvents(prev => [event, ...prev].slice(0, 100)); // Keep last 100 events
     });
   }, []);
 
   // Apply filters
   useEffect(() => {
+    console.log('📊 Dashboard: Current events count:', events.length);
     let filtered = events;
     
     if (filters.eventType) {
